@@ -34,7 +34,7 @@ OUTPUT_FILE = "graphrag_autoq_results.json"
 # Matches the domain name you used in the Streamlit sidebar when you
 # clicked "Build Knowledge Graph" for the Honeywell data.
 # If you used something else, change this value.
-DOMAIN = "honeywell"
+DOMAIN = "honeywell_products"
 
 # Cheaper, faster model for querying. Change to "gpt-4o" if you want higher quality.
 GEN_MODEL = "gpt-4o-mini"

@@ -1,0 +1,2 @@
+[console_scripts]
+poml-cli = poml.cli:entrypoint
