@@ -1,0 +1,162 @@
+{
+  "dataset": "honeywell_products",
+  "total_queries": 30,
+  "query_classes": {
+    "local_specific": "Fact lookup within a single product/entity",
+    "local_global": "A specific fact that spans multiple products",
+    "global_specific": "Synthesis across a category or subset",
+    "global_thematic": "Patterns or themes across the entire corpus"
+  },
+  "queries": [
+    {
+      "id": "Q01",
+      "class": "local_specific",
+      "question": "What is the operating temperature range of the Honeywell XNX Universal Transmitter?"
+    },
+    {
+      "id": "Q02",
+      "class": "local_specific",
+      "question": "What is the weight of the Honeywell Xenon 1902 barcode scanner?"
+    },
+    {
+      "id": "Q03",
+      "class": "local_specific",
+      "question": "What is the unlock password for the keypad lockout on the T4 Pro thermostat?"
+    },
+    {
+      "id": "Q04",
+      "class": "local_specific",
+      "question": "What is the maximum segment length for the BACnet TB3026B MS/TP LAN?"
+    },
+    {
+      "id": "Q05",
+      "class": "local_specific",
+      "question": "What protection rating does the Xenon 1902 scanner have?"
+    },
+    {
+      "id": "Q06",
+      "class": "local_specific",
+      "question": "What is the warranty period for the RTH2300 series thermostat?"
+    },
+    {
+      "id": "Q07",
+      "class": "local_specific",
+      "question": "What housing material is the XNX Universal Transmitter made of?"
+    },
+    {
+      "id": "Q08",
+      "class": "local_specific",
+      "question": "What phone number is used to order XNX parts from Honeywell?"
+    },
+    {
+      "id": "Q09",
+      "class": "local_global",
+      "question": "Which Honeywell thermostats require 24 VAC power and which ones run on AA batteries?"
+    },
+    {
+      "id": "Q10",
+      "class": "local_global",
+      "question": "Which Honeywell products include compressor protection?"
+    },
+    {
+      "id": "Q11",
+      "class": "local_global",
+      "question": "Which Honeywell products require a C-wire for installation?"
+    },
+    {
+      "id": "Q12",
+      "class": "local_global",
+      "question": "Which Honeywell products are designed for hazardous industrial environments?"
+    },
+    {
+      "id": "Q13",
+      "class": "local_global",
+      "question": "Which Honeywell products support remote access or Wi-Fi connectivity?"
+    },
+    {
+      "id": "Q14",
+      "class": "local_global",
+      "question": "Which Honeywell products come with lithium batteries?"
+    },
+    {
+      "id": "Q15",
+      "class": "local_global",
+      "question": "Which Honeywell products can be integrated into building automation or industrial networks?"
+    },
+    {
+      "id": "Q16",
+      "class": "local_global",
+      "question": "Which Honeywell products are explicitly NOT compatible with 120/240 volt systems?"
+    },
+    {
+      "id": "Q17",
+      "class": "global_specific",
+      "question": "How do Honeywell's home thermostats differ from their commercial thermostats in terms of features and installation requirements?"
+    },
+    {
+      "id": "Q18",
+      "class": "global_specific",
+      "question": "What are the common design principles across Honeywell's industrial safety products?"
+    },
+    {
+      "id": "Q19",
+      "class": "global_specific",
+      "question": "Compare the connectivity and communication options across Honeywell's thermostat product line."
+    },
+    {
+      "id": "Q20",
+      "class": "global_specific",
+      "question": "What are the key differences between Honeywell's programmable thermostats in the entry-level, mid-tier, and Wi-Fi-connected segments?"
+    },
+    {
+      "id": "Q21",
+      "class": "global_specific",
+      "question": "Summarize the power and voltage requirements across all Honeywell thermostats in the catalog."
+    },
+    {
+      "id": "Q22",
+      "class": "global_specific",
+      "question": "Across the product catalog, which categories target residential users versus enterprise or industrial users?"
+    },
+    {
+      "id": "Q23",
+      "class": "global_specific",
+      "question": "What certifications and compliance standards are referenced across Honeywell's industrial products?"
+    },
+    {
+      "id": "Q24",
+      "class": "global_thematic",
+      "question": "What patterns do you see in how Honeywell approaches product safety across this catalog?"
+    },
+    {
+      "id": "Q25",
+      "class": "global_thematic",
+      "question": "How does Honeywell balance ease-of-use and professional installation requirements across its product portfolio?"
+    },
+    {
+      "id": "Q26",
+      "class": "global_thematic",
+      "question": "What themes emerge in how Honeywell communicates warranty, support, and customer service across its products?"
+    },
+    {
+      "id": "Q27",
+      "class": "global_thematic",
+      "question": "What is the overall product strategy Honeywell appears to follow, based on the diversity of products in this catalog?"
+    },
+    {
+      "id": "Q28",
+      "class": "global_thematic",
+      "question": "What recurring engineering or design philosophies can be identified across Honeywell's building, safety, and industrial product lines?"
+    },
+    {
+      "id": "Q29",
+      "class": "global_thematic",
+      "question": "How does Honeywell handle environmental and operational constraints (temperature, humidity, hazardous conditions) across its diverse product offerings?"
+    },
+    {
+      "id": "Q30",
+      "class": "global_thematic",
+      "question": "What common themes appear in the target users and deployment contexts across Honeywell's entire product catalog?"
+    }
+  ]
+}
