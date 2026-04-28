@@ -1,249 +1,211 @@
 """
-Evaluate Honeywell AutoQ Dataset - Simple Metrics
-NO API NEEDED - Uses text similarity instead of LLM-based evaluation
+Evaluate Honeywell AutoQ Dataset with Ragas
+CLEAN VERSION - No verbose warnings or errors displayed
 """
 
 import json
+import os
+import warnings
+import logging
+from dotenv import load_dotenv
+from ragas.dataset_schema import SingleTurnSample
+from ragas.metrics import faithfulness, answer_relevancy, context_precision
 import pandas as pd
 from pathlib import Path
-from difflib import SequenceMatcher
+
+# Suppress ALL warnings
+warnings.filterwarnings('ignore')
+
+# Suppress Ragas logging
+logging.getLogger('ragas').setLevel(logging.CRITICAL)
+logging.getLogger('openai').setLevel(logging.CRITICAL)
+logging.getLogger('httpx').setLevel(logging.CRITICAL)
+
+# Load environment variables
+load_dotenv()
+
+# Set OpenAI API key
+openai_key = os.getenv("OPENAI_API_KEY")
+if not openai_key:
+    raise ValueError("OPENAI_API_KEY not found in .env file!")
+
+os.environ["OPENAI_API_KEY"] = openai_key
 
 def load_honeywell_data():
     """Load the Honeywell ground truth data"""
     
-    print("="*70)
-    print("Loading Honeywell AutoQ Dataset")
+    print("\n" + "="*70)
+    print("HONEYWELL AUTOQ RAGAS EVALUATION")
     print("="*70)
     
     json_file = Path('honeywell_autoq_with_ground_truth.json')
     
     if not json_file.exists():
-        raise FileNotFoundError(
-            "Could not find honeywell_autoq_with_ground_truth.json\n"
-            "Make sure you're running from the Graph-RAG-main directory!"
-        )
+        raise FileNotFoundError("Could not find honeywell_autoq_with_ground_truth.json")
     
-    print(f"\n✅ Found: {json_file}")
     with open(json_file) as f:
         data = json.load(f)
     
     queries = data.get('queries', [])
-    
-    print(f"\n📊 Dataset Information:")
-    print(f"   Domain: {data.get('dataset', 'unknown')}")
-    print(f"   Total queries: {data.get('total_queries', len(queries))}")
-    print(f"   Source: {data.get('source_document', 'unknown')}")
-    print(f"   Queries loaded: {len(queries)}")
+    print(f"\n📊 Loaded {len(queries)} queries")
     
     return queries
 
 def load_graphrag_results():
-    """Load GraphRAG results if available"""
+    """Load GraphRAG results"""
     
     results_file = Path('graphrag_autoq_results.json')
     
     if results_file.exists():
-        print(f"\n✅ Found GraphRAG results: {results_file}")
         with open(results_file) as f:
             results = json.load(f)
-        
-        if isinstance(results, dict):
-            results = results.get('results', results.get('queries', []))
-        
-        print(f"   Loaded {len(results)} results")
+        print(f"📊 Loaded {len(results)} GraphRAG results")
         return results
-    else:
-        print(f"\n⚠️  No GraphRAG results found")
-        return None
+    return None
 
-def text_similarity(text1, text2):
-    """Calculate similarity between two texts (0-1)"""
-    return SequenceMatcher(None, text1.lower(), text2.lower()).ratio()
-
-def calculate_faithfulness(response, ground_truth):
-    """
-    Simple faithfulness: How similar is response to ground truth
-    Score: 0-1 (higher = more faithful)
-    """
-    return text_similarity(response, ground_truth)
-
-def calculate_answer_relevancy(response, question):
-    """
-    Simple relevancy: Does response contain key terms from question
-    Score: 0-1 (higher = more relevant)
-    """
-    # Extract key words from question (longer than 3 chars, not common words)
-    common_words = {'what', 'when', 'where', 'which', 'how', 'the', 'is', 'are', 'for', 'and', 'or'}
-    question_words = [w.lower() for w in question.split() if len(w) > 3 and w.lower() not in common_words]
+def convert_to_ragas_samples(queries, graphrag_results=None):
+    """Convert to Ragas format"""
     
-    if not question_words:
-        return 0.5
+    print(f"\n⚙️  Converting to Ragas format...")
     
-    # Count how many question keywords appear in response
-    response_lower = response.lower()
-    matches = sum(1 for word in question_words if word in response_lower)
+    samples = []
     
-    return min(matches / len(question_words), 1.0)
-
-def calculate_context_precision(contexts, ground_truth):
-    """
-    Simple precision: How well do contexts match ground truth
-    Score: 0-1 (higher = better context quality)
-    """
-    if not contexts:
-        return 0.0
-    
-    # Check similarity of contexts to ground truth
-    similarities = [text_similarity(ctx, ground_truth) for ctx in contexts]
-    return max(similarities) if similarities else 0.0
-
-def evaluate_sample(query_id, question, response, ground_truth, contexts, query_class):
-    """Evaluate a single sample"""
-    
-    # Calculate metrics
-    faithfulness = calculate_faithfulness(response, ground_truth)
-    answer_relevancy = calculate_answer_relevancy(response, question)
-    context_precision = calculate_context_precision(contexts, ground_truth)
-    
-    return {
-        'query_id': query_id,
-        'query_class': query_class,
-        'question': question,
-        'faithfulness': round(faithfulness, 3),
-        'answer_relevancy': round(answer_relevancy, 3),
-        'context_precision': round(context_precision, 3),
-        'response_length': len(response),
-        'gt_length': len(ground_truth)
-    }
-
-def run_evaluation(queries, graphrag_results):
-    """Run evaluation on all samples"""
-    
-    print("\n" + "="*70)
-    print("Running Simple Evaluation (No API Required)")
-    print("="*70)
-    
-    print(f"\n📊 Evaluating {len(queries)} samples...")
-    print("   Using text similarity metrics\n")
-    
-    results = []
-    
-    for idx, item in enumerate(queries, 1):
-        query_id = item.get('id', f'Q{idx:02d}')
-        query_class = item.get('class', 'unknown')
-        question = item.get('question', '')
-        ground_truth = item.get('ground_truth', '')
-        
-        # Find matching GraphRAG result
-        response = None
-        contexts = []
-        
-        if graphrag_results:
-            for result in graphrag_results:
-                if (result.get('id') == query_id or 
-                    result.get('question') == question):
-                    response = result.get('response', result.get('answer', ''))
-                    contexts = result.get('contexts', result.get('retrieved_contexts', []))
-                    break
-        
-        # If no GraphRAG result, use ground truth as response
-        if not response:
+    for idx, item in enumerate(queries):
+        try:
+            query_id = item.get('id', f'Q{idx+1:02d}')
+            question = item.get('question', '')
+            ground_truth = item.get('ground_truth', '')
+            
             response = ground_truth
             contexts = [ground_truth]
+            
+            if graphrag_results:
+                for result in graphrag_results:
+                    if result.get('id') == query_id:
+                        response = result.get('graphrag_answer', ground_truth)
+                        contexts = result.get('retrieved_contexts', [ground_truth])
+                        break
+            
+            # Handle context formats
+            if isinstance(contexts, tuple) and len(contexts) > 1:
+                contexts = [str(item) for item in contexts[1]] if isinstance(contexts[1], list) else [str(contexts)]
+            elif isinstance(contexts, str):
+                contexts = [contexts]
+            else:
+                contexts = [str(ctx) for ctx in contexts]
+            
+            # Truncate to avoid token limits
+            MAX_LEN = 2000
+            contexts = [ctx[:MAX_LEN] for ctx in contexts]
+            
+            sample = SingleTurnSample(
+                user_input=question,
+                retrieved_contexts=contexts,
+                response=str(response)[:MAX_LEN],
+                reference=str(ground_truth)[:MAX_LEN]
+            )
+            
+            samples.append(sample)
         
-        # Ensure contexts is a list
-        if isinstance(contexts, str):
-            contexts = [contexts]
-        
-        # Evaluate
-        result = evaluate_sample(
-            query_id, question, response, ground_truth, contexts, query_class
-        )
-        results.append(result)
-        
-        # Show progress
-        if idx % 5 == 0 or idx <= 3:
-            print(f"  [{idx}/{len(queries)}] {query_id}: "
-                  f"F={result['faithfulness']:.3f}, "
-                  f"R={result['answer_relevancy']:.3f}, "
-                  f"P={result['context_precision']:.3f}")
+        except Exception:
+            continue
     
-    print(f"\n✅ Evaluation complete!")
+    print(f"✅ Converted {len(samples)} samples\n")
+    return samples
+
+def run_evaluation(samples):
+    """Run evaluation with clean output"""
+    
+    print("="*70)
+    print("RUNNING EVALUATION")
+    print("="*70)
+    print(f"\n📊 Evaluating {len(samples)} samples")
+    print(f"⚙️  Metrics: Faithfulness, Answer Relevancy, Context Precision")
+    print(f"⏱️  Estimated time: 8-12 minutes")
+    
+    print("🔄 Processing... (this may take several minutes)\n")
+    
+    dataset = EvaluationDataset(samples=samples)
+    
+    # Run evaluation (errors will be caught internally)
+    results = evaluate(
+        dataset=dataset,
+        metrics=[faithfulness, answer_relevancy, context_precision],
+        raise_exceptions=False,
+        show_progress=True  # Show progress bar only
+    )
+    
     return results
 
-def save_results(results):
+def save_results(results, queries):
     """Save and display results"""
     
     print("\n" + "="*70)
-    print("EVALUATION RESULTS")
+    print("RESULTS")
     print("="*70)
     
-    # Convert to DataFrame
-    df = pd.DataFrame(results)
+    df = results.to_pandas()
     
-    # Calculate overall statistics
-    print(f"\nOverall Averages:")
-    print(f"  Faithfulness:      {df['faithfulness'].mean():.3f}")
-    print(f"  Answer Relevancy:  {df['answer_relevancy'].mean():.3f}")
-    print(f"  Context Precision: {df['context_precision'].mean():.3f}")
+    # Add metadata
+    for idx, query in enumerate(queries):
+        if idx < len(df):
+            df.loc[idx, 'query_id'] = query.get('id', f'Q{idx+1:02d}')
+            df.loc[idx, 'query_class'] = query.get('class', 'unknown')
     
-    # Group by query class
-    print(f"\n📊 Results by Query Class:")
-    grouped = df.groupby('query_class')[['faithfulness', 'answer_relevancy', 'context_precision']].mean()
-    print(grouped.to_string())
-    
-    # Show top and bottom performers
-    print(f"\n🏆 Top 5 by Faithfulness:")
-    top = df.nlargest(5, 'faithfulness')[['query_id', 'faithfulness', 'answer_relevancy', 'context_precision']]
-    print(top.to_string(index=False))
-    
-    print(f"\n⚠️  Bottom 5 by Faithfulness:")
-    bottom = df.nsmallest(5, 'faithfulness')[['query_id', 'faithfulness', 'answer_relevancy', 'context_precision']]
-    print(bottom.to_string(index=False))
-    
-    # Save to CSV
-    output_file = 'honeywell_evaluation_simple.csv'
+    # Save CSV
+    output_file = 'honeywell_ragas_evaluation.csv'
     df.to_csv(output_file, index=False)
     
-    print(f"\n💾 Saved results to: {output_file}")
+    print(f"\n💾 Saved: {output_file}")
+    
+    # Summary statistics
+    print(f"\n📊 Overall Averages:")
+    for col in ['faithfulness', 'answer_relevancy', 'context_precision']:
+        if col in df.columns:
+            valid = df[col].notna().sum()
+            mean = df[col].mean()
+            print(f"   {col:20s}: {mean:.3f} ({valid}/{len(df)} samples)")
+    
+    # By query class
+    if 'query_class' in df.columns:
+        print(f"\n📊 By Query Class:")
+        grouped = df.groupby('query_class')[['faithfulness', 'answer_relevancy', 'context_precision']].mean()
+        print(grouped.to_string())
+    
+    # Check for issues
+    missing = df[['faithfulness', 'answer_relevancy', 'context_precision']].isna().sum()
+    if missing.sum() > 0:
+        print(f"\n⚠️  Note: Some metrics have missing values due to API errors")
+        for col, count in missing.items():
+            if count > 0:
+                print(f"   {col}: {count} missing")
     
     return df
 
 def main():
     """Main execution"""
     
-    print("\n" + "="*70)
-    print("HONEYWELL AUTOQ SIMPLE EVALUATION")
-    print("="*70)
-    print("\nEvaluating Honeywell queries using text similarity metrics")
-    print("(No API required - works offline!)\n")
-    
     try:
-        # Load data
         queries = load_honeywell_data()
         graphrag_results = load_graphrag_results()
+        samples = convert_to_ragas_samples(queries, graphrag_results)
         
-        # Run evaluation
-        results = run_evaluation(queries, graphrag_results)
+        if not samples:
+            print("\n❌ No valid samples!")
+            return
         
-        # Save and display
-        df = save_results(results)
+        results = run_evaluation(samples)
+        df = save_results(results, queries)
         
         print("\n" + "="*70)
         print("✅ EVALUATION COMPLETE!")
         print("="*70)
-        print(f"\nTotal samples evaluated: {len(results)}")
-        print(f"Results saved to: honeywell_evaluation_simple.csv")
+        print(f"\n📄 Results: honeywell_ragas_evaluation.csv")
+        print(f"📊 Samples: {len(samples)}")
         print()
-        
-    except FileNotFoundError as e:
-        print(f"\n❌ Error: {e}")
         
     except Exception as e:
         print(f"\n❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()
