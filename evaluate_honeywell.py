@@ -9,6 +9,7 @@ import warnings
 import logging
 from dotenv import load_dotenv
 from ragas.dataset_schema import SingleTurnSample
+from ragas import EvaluationDataset, evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_precision
 import pandas as pd
 from pathlib import Path
